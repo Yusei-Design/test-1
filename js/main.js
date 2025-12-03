@@ -57,11 +57,12 @@ function setupGlobalEvents() {
     // --- 3. 詳細検索（ポップアップ機能付き） ---
     const detailInput = document.getElementById('detailSearchInput');
     const detailClear = document.getElementById('detailSearchClear');
-    const overlay = document.getElementById('screenOverlay');
+    // ★追加: 2つのオーバーレイを取得
+    const screenOverlay = document.getElementById('screenOverlay');
+    const panelOverlay = document.getElementById('panelOverlay');
     const suggestionList = document.getElementById('detailSuggestionList');
 
     if (detailInput) {
-        // 入力時: フィルタ実行 ＆ 候補リスト更新
         detailInput.addEventListener('keyup', (e) => {
             const val = e.target.value.trim();
             if (detailClear) detailClear.style.display = val ? 'block' : 'none';
@@ -70,18 +71,20 @@ function setupGlobalEvents() {
             updateSuggestionList(val);
         });
 
-        // フォーカス時: 暗幕ON & リスト表示
+        // フォーカス時: 両方の暗幕ON
         detailInput.addEventListener('focus', () => {
-            if (overlay) overlay.classList.add('active');
+            if (screenOverlay) screenOverlay.classList.add('active');
+            if (panelOverlay) panelOverlay.classList.add('active');
             if (suggestionList) {
                 suggestionList.classList.add('active');
-                updateSuggestionList(detailInput.value.trim()); // 現在の値でリスト更新
+                updateSuggestionList(detailInput.value.trim()); 
             }
         });
 
-        // フォーカス外れ: 暗幕OFF & リスト非表示
+        // フォーカス外れ: 両方の暗幕OFF
         detailInput.addEventListener('blur', () => {
-            if (overlay) overlay.classList.remove('active');
+            if (screenOverlay) screenOverlay.classList.remove('active');
+            if (panelOverlay) panelOverlay.classList.remove('active');
             if (suggestionList) suggestionList.classList.remove('active');
         });
     }
@@ -91,7 +94,7 @@ function setupGlobalEvents() {
             detailInput.value = '';
             detailClear.style.display = 'none';
             filterByDest('');
-            detailInput.focus(); // フォーカス戻してリスト再表示
+            detailInput.focus(); 
         });
     }
 
@@ -119,41 +122,33 @@ function updateSuggestionList(keyword) {
     const list = document.getElementById('detailSuggestionList');
     if (!list) return;
     
-    list.innerHTML = ''; // クリア
+    list.innerHTML = ''; 
 
     if (!keyword) {
-        // 空の時は何も出さない（または履歴などを出すならここ）
         list.classList.remove('active');
         return;
     }
 
-    // 検索ロジックを再利用（busLogic.searchStops は全バス停から探すので使える）
     const result = busLogic.searchStops(keyword);
     
     if (!result || result.results.length === 0) {
-        // 候補なし
         list.classList.remove('active');
         return;
     }
 
-    // 候補ありなら表示
     list.classList.add('active');
 
-    // 最大10件くらい表示
     const candidates = result.results.slice(0, 10);
     
     candidates.forEach(item => {
-        // アイテム生成（クリック時の動作も定義）
+        // blurイベントより先に発火させるため mousedown を使用
         const el = components.createSuggestionItemElement(item.name, () => {
-            // クリック時: 入力欄にセットして絞り込み
             const input = document.getElementById('detailSearchInput');
             if (input) {
                 input.value = item.name;
-                // ×ボタン表示
                 const clearBtn = document.getElementById('detailSearchClear');
                 if(clearBtn) clearBtn.style.display = 'block';
                 
-                // 絞り込み実行
                 filterByDest(item.name);
             }
         });
@@ -179,7 +174,6 @@ function goBack() {
     } else if (panel.classList.contains('state-detail')) {
         uiState.updateState('main');
         
-        // メインに戻ったら詳細検索はリセット
         const dInput = document.getElementById('detailSearchInput');
         const dClear = document.getElementById('detailSearchClear');
         if(dInput) dInput.value = '';
