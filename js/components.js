@@ -1,109 +1,148 @@
 // MARK: - UI Components Factory
-// HTML文字列を生成するコンポーネント群。
+// DOM要素を生成して返すコンポーネント群。
+// イベントリスナーもここで設定して返すため、HTML文字列への埋め込みは不要になります。
 
 // MARK: Main List Item
-export function createListItemHTML(name, count) {
-    return `
-        <div class="list-item">
-            <span class="list-title">${name}</span>
-            <span class="list-sub">${count} のりば</span>
-        </div>
+export function createListItemElement(name, count, onClick) {
+    const div = document.createElement('div');
+    div.className = 'list-item';
+    div.innerHTML = `
+        <span class="list-title">${name}</span>
+        <span class="list-sub">${count} のりば</span>
     `;
+    div.addEventListener('click', onClick);
+    return div;
 }
 
-// MARK: Detail Header & Tags
-export function createDetailHeaderHTML(name, tagsHtml, buttonsHtml) {
-    return `
-        <div class="detail-title">${name}</div>
-        <div class="tag-container">${tagsHtml}</div>
-        <div class="filter-carousel" id="platformFilterButtons">${buttonsHtml}</div>
-        <div id="platformList"></div>
-    `;
+// MARK: Detail Header
+export function createDetailHeaderElement(name) {
+    const div = document.createElement('div');
+    div.className = 'detail-title';
+    div.textContent = name;
+    return div;
 }
 
-// MARK: Route Tag Badge
-export function createRouteTagHTML(lineName, color, textColor, onClickAction) {
-    return `
-        <div class="tag-badge" 
-             style="background:${color}; color:${textColor}; cursor:pointer;" 
-             onclick="${onClickAction}">
-             ${lineName}
-        </div>
-    `;
+// MARK: Tag Container
+export function createTagContainer(routesMap, onRouteClick) {
+    const container = document.createElement('div');
+    container.className = 'tag-container';
+
+    // 系統名でソート
+    const sortedRoutes = Array.from(routesMap.keys()).sort((a, b) => 
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    sortedRoutes.forEach(ln => {
+        const style = routesMap.get(ln);
+        const badge = document.createElement('div');
+        badge.className = 'tag-badge';
+        badge.style.background = style.c;
+        badge.style.color = style.tc;
+        badge.style.cursor = 'pointer';
+        badge.textContent = ln;
+        
+        badge.addEventListener('click', () => onRouteClick(ln));
+        container.appendChild(badge);
+    });
+
+    return container;
 }
 
-// MARK: Filter Chip Button
-export function createFilterButtonHTML(id, label, isActive, onClickAction) {
-    const activeClass = isActive ? 'active' : '';
-    return `
-        <button class="filter-chip ${activeClass}" 
-                data-id="${id}" 
-                onclick="${onClickAction}">
-                ${label}
-        </button>
-    `;
+// MARK: Filter Carousel
+export function createFilterCarousel(stops, onFilterClick) {
+    const container = document.createElement('div');
+    container.className = 'filter-carousel';
+    container.id = 'platformFilterButtons'; // ID付与（スクロール制御用）
+
+    // 「すべて」ボタン
+    const allBtn = createFilterButtonElement('ALL', 'すべて', true, () => onFilterClick('ALL'));
+    container.appendChild(allBtn);
+
+    // 各のりばボタン
+    stops.forEach(stop => {
+        const label = stop.desc || '不明';
+        const btn = createFilterButtonElement(stop.id, label, false, () => onFilterClick(stop.id));
+        container.appendChild(btn);
+    });
+
+    return container;
+}
+
+function createFilterButtonElement(id, label, isActive, onClick) {
+    const btn = document.createElement('button');
+    btn.className = `filter-chip ${isActive ? 'active' : ''}`;
+    btn.dataset.id = id;
+    btn.textContent = label;
+    btn.addEventListener('click', onClick);
+    return btn;
 }
 
 // MARK: Bus Card
-// ★修正: onclick属性をHTML文字列から削除（main.jsで設定するため）
-export function createBusCardHTML(params) {
-    const { 
-        lineName, color, textColor, destName, 
-        remainMsg, timeStr 
-    } = params;
+export function createBusCardElement(params, onClick) {
+    const { lineName, color, textColor, destName, remainMsg, timeStr } = params;
 
-    return `
-        <div class="bus-card">
-            <div class="bus-left-col">
-                <span class="line-badge" style="background:${color}; color:${textColor};">
-                    ${lineName}
-                </span>
-                <div class="bus-dest">${destName}</div>
-            </div>
-            <div class="bus-right-col">
-                <span class="bus-remain">${remainMsg}</span>
-                <div class="bus-time">${timeStr}</div>
-            </div>
+    const card = document.createElement('div');
+    card.className = 'bus-card';
+    card.innerHTML = `
+        <div class="bus-left-col">
+            <span class="line-badge" style="background:${color}; color:${textColor};">
+                ${lineName}
+            </span>
+            <div class="bus-dest">${destName}</div>
+        </div>
+        <div class="bus-right-col">
+            <span class="bus-remain">${remainMsg}</span>
+            <div class="bus-time">${timeStr}</div>
         </div>
     `;
+    card.addEventListener('click', onClick);
+    return card;
 }
 
 // MARK: Section Label
-export function createSectionLabelHTML(text) {
-    return `<div class="section-label">${text}</div>`;
+export function createSectionLabelElement(text) {
+    const div = document.createElement('div');
+    div.className = 'section-label';
+    div.textContent = text;
+    return div;
 }
 
 // MARK: Route Detail Header
-export function createRouteHeaderHTML(lineName, color, textColor, destName) {
-    return `
-        <div class="route-header">
-            <span class="rh-badge" style="background:${color}; color:${textColor};">
-                ${lineName}
-            </span>
-            <div class="rh-title">${destName} 行き</div>
-        </div>
+export function createRouteHeaderElement(lineName, color, textColor, destName) {
+    const div = document.createElement('div');
+    div.className = 'route-header';
+    div.innerHTML = `
+        <span class="rh-badge" style="background:${color}; color:${textColor};">
+            ${lineName}
+        </span>
+        <div class="rh-title">${destName} 行き</div>
     `;
+    return div;
 }
 
 // MARK: Timeline Item
-export function createTimelineItemHTML(time, stopName, isCurrent, onClickAction) {
-    const activeClass = isCurrent ? 'active' : '';
-    return `
-        <div class="tl-row ${activeClass}" onclick="${onClickAction}">
-            <div class="tl-visual">
-                <div class="tl-line"></div>
-                <div class="tl-dot"></div>
-                <div class="tl-line"></div>
-            </div>
-            <div class="tl-info">
-                <span class="tl-time">${time}</span>
-                <span class="tl-name">${stopName}</span>
-            </div>
+export function createTimelineItemElement(time, stopName, isCurrent, onClick) {
+    const row = document.createElement('div');
+    row.className = `tl-row ${isCurrent ? 'active' : ''}`;
+    row.innerHTML = `
+        <div class="tl-visual">
+            <div class="tl-line"></div>
+            <div class="tl-dot"></div>
+            <div class="tl-line"></div>
+        </div>
+        <div class="tl-info">
+            <span class="tl-time">${time}</span>
+            <span class="tl-name">${stopName}</span>
         </div>
     `;
+    row.addEventListener('click', onClick);
+    return row;
 }
 
 // MARK: Empty Message
-export function createEmptyMsgHTML(text) {
-    return `<div class="empty-msg">${text}</div>`;
+export function createEmptyMsgElement(text) {
+    const div = document.createElement('div');
+    div.className = 'empty-msg';
+    div.textContent = text;
+    return div;
 }
