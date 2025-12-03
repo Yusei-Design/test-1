@@ -1,6 +1,5 @@
 // MARK: - UI Components Factory
 // HTML文字列を生成するコンポーネント群。
-// デザイン変更（クラス名や構造の変更）はここで行います。
 
 // MARK: Main List Item
 export function createListItemHTML(name, count) {
@@ -46,15 +45,15 @@ export function createFilterButtonHTML(id, label, isActive, onClickAction) {
 }
 
 // MARK: Bus Card
+// ★修正: onclick属性をHTML文字列から削除（main.jsで設定するため）
 export function createBusCardHTML(params) {
     const { 
         lineName, color, textColor, destName, 
-        remainMsg, timeStr, 
-        onClickAction 
+        remainMsg, timeStr 
     } = params;
 
     return `
-        <div class="bus-card" onclick="${onClickAction}">
+        <div class="bus-card">
             <div class="bus-left-col">
                 <span class="line-badge" style="background:${color}; color:${textColor};">
                     ${lineName}
