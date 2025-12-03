@@ -1,4 +1,6 @@
 // MARK: - Main Entry Point
+// アプリケーションの司令塔。各モジュールを統合し、イベントを処理する。
+
 import { state } from './state.js';
 import * as utils from './utils.js';
 import * as components from './components.js';
@@ -9,17 +11,20 @@ import * as uiState from './ui_state.js';
 // MARK: - Init
 window.onload = function() {
     mapManager.initMap();
+
+    // 検索窓などの固定イベント登録
     setupGlobalEvents();
 
+    // データ展開確認
     if(typeof window.GTFS_DATA !== 'undefined') {
         window.GTFS_DATA.forEach(s => state.stopIdMap[s.id] = s);
-        doSearch(''); 
+        doSearch(''); // 初期表示（お気に入りリスト等）
     } else {
         console.error('GTFS Data not loaded. Check index.html bridge script.');
     }
 };
 
-// MARK: - Global Events
+// MARK: - Global Events Setup
 function setupGlobalEvents() {
     const searchInput = document.getElementById('searchKeyword');
     if (searchInput) {
@@ -57,8 +62,11 @@ function setupGlobalEvents() {
 function goBack() {
     const panel = document.getElementById('appPanel');
     
+    // ルート詳細 -> 停留所詳細
     if (panel.classList.contains('state-route')) {
         uiState.updateState('detail');
+        
+        // 停留所位置へマップを再ズーム
         if (state.currentStopDataMap) {
             const stops = Object.values(state.currentStopDataMap).map(item => item.stop);
             if (stops.length > 0) {
@@ -66,8 +74,11 @@ function goBack() {
                 state.map.fitBounds(latLngs, { padding: [80, 80] });
             }
         }
+        
+        // リストとマーカーの状態を再描画
         renderPlatforms();
 
+    // 停留所詳細 -> メイン（検索）
     } else if (panel.classList.contains('state-detail')) {
         uiState.updateState('main');
         
@@ -87,6 +98,7 @@ export function doSearch(keyword) {
     
     const searchResult = busLogic.searchStops(keyword);
     
+    // エラーガード
     if (!searchResult || !searchResult.results) return;
     
     if (searchResult.results.length === 0) {
@@ -100,13 +112,13 @@ export function doSearch(keyword) {
 
     if(emptyMsg) emptyMsg.style.display = 'none';
 
-    // ★修正: createSectionLabelElementはDOM要素を返すので、直接appendChildする
+    // お気に入りラベル
     if (searchResult.isFavorite && keyword === '') {
         const label = components.createSectionLabelElement('お気に入りのバス停');
         container.appendChild(label);
     }
 
-    // ★修正: createListItemElementはDOM要素を返すので、直接appendChildする
+    // リスト生成
     searchResult.results.forEach(item => {
         const itemEl = components.createListItemElement(item.name, item.stops.length, () => {
             selectGroup(item.name, item.stops);
@@ -143,25 +155,30 @@ function selectGroup(name, stops) {
         });
     });
 
+    // --- DOM構築 ---
     const viewDetail = document.getElementById('viewDetail');
     viewDetail.innerHTML = ''; 
 
-    // ★修正: DOM要素を直接追加
+    // 1. タイトル
     viewDetail.appendChild(components.createDetailHeaderElement(name));
 
+    // 2. 系統タグ
     viewDetail.appendChild(components.createTagContainer(routesMap, (route) => {
         setRouteFilter(route);
     }));
 
+    // 3. フィルタボタン
     const sortedStops = [...stops].sort((a,b) => (a.desc || '').localeCompare(b.desc || ''));
     viewDetail.appendChild(components.createFilterCarousel(sortedStops, (id) => {
         setPlatformFilter(id);
     }));
 
+    // 4. リストコンテナ
     const listDiv = document.createElement('div');
     listDiv.id = 'platformList';
     viewDetail.appendChild(listDiv);
     
+    // データセット
     state.currentStopDataMap = stopDataMap;
     state.currentFilter = { platformId: 'ALL', destKeyword: '', targetStopIds: null, route: 'ALL' };
     
@@ -195,9 +212,10 @@ export function renderPlatforms() {
 
         mapManager.setMarkerActive(stop.id);
 
-        // ★修正: DOM要素を直接追加
+        // 見出し
         container.appendChild(components.createSectionLabelElement(`のりば ${stop.desc || '不明'}`));
 
+        // カード生成
         nextBuses.forEach(bus => {
             const tripId = window.TRIP_LIST[bus[0]];
             const timeStr = utils.minToTime(bus[1]);
@@ -206,6 +224,7 @@ export function renderPlatforms() {
             const routeInfo = window.ROUTE_LIST[bus[5]];
             const lineName = routeInfo.n.replace('市バス', '');
             
+            // 残り時間メッセージ
             const diff = bus[1] - currentMin;
             let remainMsg = "";
             if (diff > 0) {
@@ -216,7 +235,6 @@ export function renderPlatforms() {
                 remainMsg = "出発済み";
             }
 
-            // ★修正: DOM要素を直接追加
             const card = components.createBusCardElement({
                 lineName, 
                 color: routeInfo.c, 
@@ -233,7 +251,6 @@ export function renderPlatforms() {
     });
 
     if (!hasBus) {
-        // ★修正: DOM要素を直接追加
         container.appendChild(components.createEmptyMsgElement('該当するバスはありません'));
     }
 }
@@ -285,9 +302,10 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     const viewRoute = document.getElementById('viewRoute');
     viewRoute.innerHTML = ''; 
 
-    // ★修正: DOM要素を直接追加
+    // ヘッダー
     viewRoute.appendChild(components.createRouteHeaderElement(lineName, lineColor, lineText, destName));
 
+    // タイムライン
     const tlBox = document.createElement('div');
     tlBox.className = 'timeline-box';
     
@@ -297,7 +315,6 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
         const isCurrent = (s.i === currentStopId);
         const time = s.t.substring(0, 5);
         
-        // ★修正: DOM要素を直接追加
         const row = components.createTimelineItemElement(time, stopInfo.name, isCurrent, () => {
             mapManager.zoomToStop(stopInfo.id);
         });
@@ -313,6 +330,7 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     }, 300);
 }
 
+// MARK: - Map Zoom Action
 function zoomToBusStop() {
     mapManager.zoomToStop(state.activeRouteStopId);
 }
