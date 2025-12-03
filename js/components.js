@@ -1,6 +1,5 @@
 // MARK: - UI Components Factory
 // DOM要素を生成して返すコンポーネント群。
-// デザイン変更（クラス名や構造の変更）はここで行います。
 
 // MARK: Main List Item
 export function createListItemElement(name, count, onClick) {
@@ -137,6 +136,15 @@ export function createTimelineItemElement(time, stopName, isCurrent, onClick) {
     `;
     row.addEventListener('click', onClick);
     return row;
+}
+
+// MARK: Suggestion Item (Popup)
+export function createSuggestionItemElement(text, onClick) {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.textContent = text;
+    div.addEventListener('mousedown', onClick); // blurより先に発火させるためmousedown
+    return div;
 }
 
 // MARK: Empty Message
