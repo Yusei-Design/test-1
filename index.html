@@ -16,6 +16,8 @@
 
     <div id="map"></div>
 
+    <div id="screenOverlay" class="screen-overlay"></div>
+
     <div class="panel-container state-main" id="appPanel">
         
         <div class="views-wrapper">
@@ -32,7 +34,6 @@
             
             <div class="nav-group" id="navMain">
                 <button class="nav-circle-btn" id="btnHome">🏠</button>
-                
                 <div class="nav-capsule">
                     <span class="nav-icon">🔍</span>
                     <input type="text" class="nav-input" id="searchKeyword" placeholder="バス停を検索">
@@ -41,17 +42,20 @@
             </div>
 
             <div class="nav-group" id="navDetail">
-                <button class="nav-circle-btn">＜</button>
+                <div id="detailSuggestionList" class="suggestion-popup"></div>
+
+                <button class="nav-circle-btn" onclick="goBack()">＜</button>
                 <div class="nav-capsule">
                     <span class="nav-icon">🚌</span>
                     <input type="text" class="nav-input" id="detailSearchInput" placeholder="行きたいバス停">
+                    <span class="nav-clear" id="detailSearchClear">✕</span>
                 </div>
                 <button class="nav-circle-btn" id="btnFav">★</button>
             </div>
 
             <div class="nav-group" id="navRoute">
-                <button class="nav-circle-btn">＜</button>
-                <button class="nav-capsule-btn">
+                <button class="nav-circle-btn" onclick="goBack()">＜</button>
+                <button class="nav-capsule-btn" onclick="zoomToBusStop()">
                     📍 のりばをクローズアップ
                 </button>
             </div>
