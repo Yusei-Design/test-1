@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body ontouchstart="">
 
     <div id="map"></div>
 
@@ -46,7 +46,7 @@
             <div class="nav-group" id="navDetail">
                 <div id="detailSuggestionList" class="suggestion-popup"></div>
 
-                <button class="nav-circle-btn" onclick="goBack()">＜</button>
+                <button class="nav-circle-btn">＜</button>
                 <div class="nav-capsule">
                     <span class="nav-icon">🚌</span>
                     <input type="text" class="nav-input" id="detailSearchInput" placeholder="行きたいバス停">
@@ -56,8 +56,8 @@
             </div>
 
             <div class="nav-group" id="navRoute">
-                <button class="nav-circle-btn" onclick="goBack()">＜</button>
-                <button class="nav-capsule-btn" onclick="zoomToBusStop()">
+                <button class="nav-circle-btn">＜</button>
+                <button class="nav-capsule-btn">
                     📍 のりばをクローズアップ
                 </button>
             </div>
