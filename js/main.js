@@ -77,14 +77,10 @@ function setupGlobalEvents() {
         detailInput.addEventListener('focus', () => {
             if (screenOverlay) screenOverlay.classList.add('active');
             if (panelOverlay) panelOverlay.classList.add('active');
-            // 入力済みの値があればリスト出す
             if (detailInput.value.trim()) {
                 updateSuggestionList(detailInput.value.trim());
             }
         });
-        
-        // ★修正: blurイベントでの非表示をやめる
-        // これによりキーボードを閉じてもリストは消えず、ボタンを押せるようになる
     }
 
     if (detailClear) {
@@ -96,12 +92,11 @@ function setupGlobalEvents() {
         });
     }
 
-    // ★追加: 暗幕クリックで検索モード終了（閉じる）
+    // 暗幕クリックで検索モード終了
     const closeSearchMode = () => {
         if (screenOverlay) screenOverlay.classList.remove('active');
         if (panelOverlay) panelOverlay.classList.remove('active');
         if (suggestionList) suggestionList.classList.remove('active');
-        // フォーカスも外す
         if (detailInput) detailInput.blur();
     };
 
@@ -126,7 +121,6 @@ function setupGlobalEvents() {
         zoomBtn.addEventListener('click', zoomToBusStop);
     }
 
-    // 外部から呼べるように関数を保持（updateSuggestionList内で使うため）
     window._closeSearchMode = closeSearchMode;
 }
 
@@ -151,8 +145,8 @@ function updateSuggestionList(keyword) {
 
     list.classList.add('active');
 
-    // 最大50件
-    const candidates = result.results.slice(0, 50);
+    // ★修正: 5件に制限
+    const candidates = result.results.slice(0, 5);
     
     candidates.forEach(item => {
         const el = components.createSuggestionItemElement(item.name, () => {
@@ -164,7 +158,6 @@ function updateSuggestionList(keyword) {
                 
                 filterByDest(item.name);
                 
-                // ★追加: 選択したら閉じる
                 if (window._closeSearchMode) window._closeSearchMode();
             }
         });
