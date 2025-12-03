@@ -53,6 +53,21 @@ body {
     width: 100%; height: 40%; flex-shrink: 0; z-index: 1; background: #ddd;
 }
 
+/* ★追加: フォーカス時の暗幕 */
+.screen-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #2c2c2c;
+    opacity: 0;
+    pointer-events: none; /* 通常時は触れない */
+    z-index: 90; /* パネル(10)より上、ナビ(100)より下 */
+    transition: opacity 0.3s ease;
+}
+.screen-overlay.active {
+    opacity: 0.2; /* 20% */
+    pointer-events: auto; /* クリックで閉じれるように */
+}
+
 .panel-container { 
     width: 100%; flex: 1; background: var(--bg-base);
     display: flex; flex-direction: column; z-index: 10; position: relative;
@@ -127,7 +142,44 @@ body {
     height: var(--nav-height); background: var(--bg-card);
     border-radius: 24px; display: flex; align-items: center; padding: 0 16px;
     box-shadow: var(--nav-shadow);
+    /* 候補リストの基準点にするため */
+    position: relative; 
 }
+
+/* ★追加: 候補リストのポップアップ */
+.suggestion-popup {
+    position: absolute;
+    bottom: calc(100% + 12px); /* 検索バーの上に隙間を開けて配置 */
+    left: 60px; /* 戻るボタンの幅分空ける */
+    right: 60px; /* お気に入りボタンの幅分空ける */
+    max-height: 40vh; /* 画面の40%くらいの高さまで */
+    background: var(--bg-card);
+    border-radius: var(--radius-L);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    overflow-y: auto;
+    display: none; /* デフォルト非表示 */
+    flex-direction: column;
+    z-index: 110;
+    padding: 8px 0;
+    /* スクロールバー非表示 */
+    scrollbar-width: none;
+}
+.suggestion-popup::-webkit-scrollbar { display: none; }
+.suggestion-popup.active { display: flex; }
+
+/* 候補アイテム */
+.suggestion-item {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:active { background-color: #f5f5f5; }
+
 
 .nav-capsule-btn {
     flex: 1;
@@ -144,7 +196,6 @@ body {
     color: var(--text-main);
     cursor: pointer;
     white-space: nowrap;
-    /* アニメーションON */
     transition: transform 0.1s; 
 }
 .nav-capsule-btn:active { transform: scale(0.95); background: #f9f9f9; }
@@ -169,7 +220,6 @@ body {
     margin-left: 8px;
     display: none;
     flex-shrink: 0;
-    /* アニメーションON */
     transition: transform 0.1s;
 }
 .nav-clear:active { transform: scale(0.9); color: var(--text-main); }
@@ -181,7 +231,6 @@ body {
     display: flex; align-items: center; justify-content: center;
     box-shadow: var(--nav-shadow); 
     cursor: pointer; color: var(--text-main); font-size: 18px; font-weight: 700;
-    /* アニメーションON */
     transition: transform 0.1s;
 }
 .nav-circle-btn:active { transform: scale(0.9); }
@@ -192,10 +241,9 @@ body {
     border-radius: var(--radius-L); 
     margin-bottom: var(--gap-item);
     cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    /* アニメーションOFF（色変化のみ） */
     transition: background-color 0.1s;
 }
-.list-item:active { background: #fafafa; }
+.list-item:active { background: #fafafa; } 
 
 .list-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; display: block; }
 .list-sub { font-size: var(--fs-sub); color: var(--text-sub); font-weight: 500; }
@@ -210,7 +258,6 @@ body {
     height: 20px; padding: 0 8px; border-radius: 4px; 
     color: #fff; font-size: 10px; font-weight: 700; 
     display: flex; align-items: center; justify-content: center; white-space: nowrap;
-    /* アニメーションON */
     transition: opacity 0.2s, transform 0.1s;
 }
 .tag-badge:active { transform: scale(0.95); }
@@ -228,8 +275,7 @@ body {
     font-weight: 600; font-size: var(--fs-sub); 
     border: none; cursor: pointer; white-space: nowrap; 
     display: flex; align-items: center; justify-content: center;
-    /* アニメーションON */
-    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    transition: all 0.2s ease, transform 0.1s;
 }
 .filter-chip:active { transform: scale(0.95); }
 .filter-chip.active { background: var(--text-main); color: #ffffff; }
@@ -252,10 +298,9 @@ body {
     justify-content: space-between; 
     cursor: pointer; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    /* アニメーションOFF（色変化のみ） */
     transition: background-color 0.1s;
 }
-.bus-card:active { background: #fafafa; }
+.bus-card:active { background: #fafafa; } 
 
 .bus-left-col {
     display: flex; 
