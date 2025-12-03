@@ -26,15 +26,10 @@ export function doSearch(keyword) {
     
     container.innerHTML = '';
     
-    // ロジック呼び出し
     const searchResult = busLogic.searchStops(keyword);
     
-    // ★修正: 結果が不正な場合はここで中断（クラッシュ防止）
-    if (!searchResult || !searchResult.results) {
-        return;
-    }
+    if (!searchResult || !searchResult.results) return;
     
-    // UI反映
     if (searchResult.results.length === 0) {
         if (searchResult.isFavorite && keyword === '') {
             if(emptyMsg) emptyMsg.style.display = 'block';
@@ -118,6 +113,7 @@ export function renderPlatforms() {
     const container = document.getElementById('platformList');
     container.innerHTML = '';
     
+    // 一旦すべて白丸にリセット
     mapManager.resetMarkersStyle();
     
     const now = new Date();
@@ -134,7 +130,9 @@ export function renderPlatforms() {
         if (nextBuses.length === 0) return;
         hasBus = true;
 
-        mapManager.highlightMarker(stop.id);
+        // ★修正: 排他制御(highlight)ではなく、追加制御(setActive)を使用
+        // これにより、ループで複数ののりばが連続して黒丸になります
+        mapManager.setMarkerActive(stop.id);
 
         container.innerHTML += components.createSectionLabelHTML(`のりば ${stop.desc || '不明'}`);
 
@@ -150,17 +148,18 @@ export function renderPlatforms() {
             const remainMsg = diff <= 0 ? "まもなく" : `${diff}分後`;
 
             const div = document.createElement('div');
+            // ★修正: createBusCardHTML に余計な引数を渡さない
             div.innerHTML = components.createBusCardHTML({
                 lineName, 
                 color: routeInfo.c, 
                 textColor: routeInfo.t, 
                 destName, 
                 remainMsg, 
-                timeStr,
-                onClickAction: "" 
+                timeStr
             });
             const card = div.firstElementChild;
             
+            // JSで直接イベントを設定 (これでHTML属性の影響を受けない)
             card.onclick = () => showTripDetail(tripId, stop.id, shapeId, lineName, routeInfo.c, routeInfo.t, destName);
             
             container.appendChild(card);
@@ -210,6 +209,7 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     
     state.activeRouteStopId = currentStopId;
 
+    // ★修正: ルート詳細では「出発地」だけを黒くしたいので highlightMarker (排他) でOK
     mapManager.highlightMarker(currentStopId);
     
     mapManager.drawRoutePolyline(shapeId);
