@@ -5,10 +5,9 @@ import { state } from './state.js';
 
 // MARK: Init Map
 export function initMap() {
-    // 京都市中心部
     state.map = L.map('map', { 
         zoomControl: false, 
-        tap: false // モバイルでのタップ挙動改善
+        tap: false 
     }).setView([35.03, 135.76], 13);
 
     L.control.zoom({ position: 'topleft' }).addTo(state.map);
@@ -28,7 +27,6 @@ export function updateMarkersForDetail(stops, onClickCallback) {
     const latLngs = [];
 
     stops.forEach(stop => {
-        // デフォルトは白抜き
         const marker = L.circleMarker([stop.lat, stop.lon], { 
             color: '#2c2c2c',       
             fillColor: '#ffffff',   
@@ -39,7 +37,6 @@ export function updateMarkersForDetail(stops, onClickCallback) {
         
         marker.stopId = stop.id;
         
-        // クリックイベント
         marker.on('click', () => {
             onClickCallback(stop.id);
         });
@@ -54,25 +51,40 @@ export function updateMarkersForDetail(stops, onClickCallback) {
     }
 }
 
-// MARK: Highlight Marker
-// 特定のマーカーを黒丸（選択状態）にする
+// MARK: Highlight Marker (Exclusive)
+// 特定のマーカーを黒丸にし、それ以外を白丸に戻す（詳細画面での選択時など）
 export function highlightMarker(targetStopId) {
     state.markers.forEach(m => {
         if (m.stopId === targetStopId) {
             m.setStyle({ 
                 color: '#2c2c2c',      
-                fillColor: '#2c2c2c', // 黒塗り
+                fillColor: '#2c2c2c', 
                 fillOpacity: 1 
             });
             m.bringToFront(); 
         } else {
             m.setStyle({ 
                 color: '#2c2c2c', 
-                fillColor: '#ffffff', // 白抜き
+                fillColor: '#ffffff', 
                 fillOpacity: 1 
             });
         }
     });
+}
+
+// MARK: Set Marker Active (Additive)
+// ★追加: 特定のマーカーを黒丸にする（他を白に戻さない）
+// 「すべて」表示の時に、バスがあるのりばを次々と黒くしていくために使用
+export function setMarkerActive(targetStopId) {
+    const marker = state.markers.find(m => m.stopId === targetStopId);
+    if (marker) {
+        marker.setStyle({ 
+            color: '#2c2c2c',      
+            fillColor: '#2c2c2c', 
+            fillOpacity: 1 
+        });
+        marker.bringToFront();
+    }
 }
 
 // MARK: Reset Markers Style
@@ -93,7 +105,6 @@ export function drawRoutePolyline(shapeId) {
         state.currentPolyline = null;
     }
 
-    // ★修正: window.SHAPES_DATA を参照
     if (shapeId && typeof window.SHAPES_DATA !== 'undefined' && window.SHAPES_DATA[shapeId]) {
         const latlngs = window.SHAPES_DATA[shapeId];
         state.currentPolyline = L.polyline.antPath(latlngs, {
