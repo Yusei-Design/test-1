@@ -223,7 +223,7 @@ body {
 .section-label {
     font-size: var(--fs-sub); color: var(--text-sub); 
     margin-bottom: var(--gap-item); padding-left: 8px;
-    margin-top: 16px; 
+    margin-top: 24px; 
 }
 .section-label:first-child { margin-top: 0; }
 
