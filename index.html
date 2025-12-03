@@ -33,22 +33,22 @@
             <div class="nav-group" id="navMain">
                 <div class="nav-capsule">
                     <span class="nav-icon">🔍</span>
-                    <input type="text" class="nav-input" id="searchKeyword" placeholder="バス停を検索" onkeyup="handleSearch(event)">
+                    <input type="text" class="nav-input" id="searchKeyword" placeholder="バス停を検索">
                 </div>
             </div>
 
             <div class="nav-group" id="navDetail">
-                <button class="nav-circle-btn" onclick="goBack()">＜</button>
+                <button class="nav-circle-btn">＜</button>
                 <div class="nav-capsule">
                     <span class="nav-icon">🚌</span>
-                    <input type="text" class="nav-input" id="detailSearchInput" placeholder="行きたいバス停" onkeyup="filterByDest(event)">
+                    <input type="text" class="nav-input" id="detailSearchInput" placeholder="行きたいバス停">
                 </div>
-                <button class="nav-circle-btn" id="btnFav" onclick="toggleFavorite()">★</button>
+                <button class="nav-circle-btn" id="btnFav">★</button>
             </div>
 
             <div class="nav-group" id="navRoute">
-                <button class="nav-circle-btn" onclick="goBack()">＜</button>
-                <button class="nav-capsule-btn" onclick="zoomToBusStop()">
+                <button class="nav-circle-btn">＜</button>
+                <button class="nav-capsule-btn">
                     📍 のりばをクローズアップ
                 </button>
             </div>
@@ -63,13 +63,7 @@
     
     <script>
         console.log("Checking data loading...");
-        if (typeof GTFS_DATA !== 'undefined') {
-            window.GTFS_DATA = GTFS_DATA;
-            console.log("✅ GTFS_DATA Loaded");
-        } else {
-            console.error("❌ GTFS_DATA Missing");
-        }
-
+        if (typeof GTFS_DATA !== 'undefined') window.GTFS_DATA = GTFS_DATA;
         if (typeof TIMETABLE_DATA !== 'undefined') window.TIMETABLE_DATA = TIMETABLE_DATA;
         if (typeof SHAPES_DATA !== 'undefined') window.SHAPES_DATA = SHAPES_DATA;
         if (typeof TRIP_STOPS_DATA !== 'undefined') window.TRIP_STOPS_DATA = TRIP_STOPS_DATA;
