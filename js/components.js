@@ -1,6 +1,6 @@
 // MARK: - UI Components Factory
 // DOM要素を生成して返すコンポーネント群。
-// イベントリスナーもここで設定して返すため、HTML文字列への埋め込みは不要になります。
+// デザイン変更（クラス名や構造の変更）はここで行います。
 
 // MARK: Main List Item
 export function createListItemElement(name, count, onClick) {
