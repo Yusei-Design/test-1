@@ -53,7 +53,7 @@ body {
     width: 100%; height: 40%; flex-shrink: 0; z-index: 1; background: #ddd;
 }
 
-/* 共通オーバーレイ設定 */
+/* 暗幕 */
 .screen-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -67,17 +67,8 @@ body {
     pointer-events: auto; 
 }
 
-/* 1. 地図用の暗幕 (パネルより下) */
-#screenOverlay {
-    z-index: 5; /* パネル(10)より下 */
-}
-
-/* 2. パネル内コンテンツ用の暗幕 (ナビより下) */
-.panel-overlay {
-    position: absolute; /* パネル基準 */
-    z-index: 50; /* ナビ(100)より下、コンテンツより上 */
-    border-radius: var(--radius-L) var(--radius-L) 0 0; 
-}
+#screenOverlay { z-index: 5; }
+.panel-overlay { position: absolute; z-index: 50; border-radius: var(--radius-L) var(--radius-L) 0 0; }
 
 .panel-container { 
     width: 100%; flex: 1; background: var(--bg-base);
@@ -134,7 +125,7 @@ body {
 .nav-area {
     position: absolute; bottom: var(--nav-margin); left: var(--nav-margin); right: var(--nav-margin);
     height: var(--nav-height); 
-    z-index: 100; /* ★重要: オーバーレイ(50)より上 */
+    z-index: 100;
     pointer-events: none;
     max-width: calc(100% - var(--nav-margin) * 2);
 }
@@ -159,38 +150,68 @@ body {
     position: relative; 
 }
 
-/* 候補リストポップアップ */
+/* ★修正: 候補リスト（下から積み上げスタイル） */
 .suggestion-popup {
     position: absolute;
-    bottom: calc(100% + 12px); 
-    left: 60px; 
-    right: 60px; 
-    max-height: 40vh; 
-    background: var(--bg-card);
-    border-radius: var(--radius-L);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    bottom: calc(100% + 12px); /* 検索バーの上に配置 */
+    left: 60px; /* 戻るボタンの幅+gap分 */
+    right: 60px; /* お気に入りボタンの幅+gap分 */
+    max-height: 50vh; 
+    
+    /* コンテナ自体は透明 */
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    
     overflow-y: auto;
     display: none; 
-    flex-direction: column;
-    z-index: 110; /* ナビ(100)よりさらに上 */
-    padding: 8px 0;
+    
+    /* 下から順に積み上げる */
+    flex-direction: column-reverse;
+    gap: 9px;
+    
+    z-index: 110; 
+    padding: 0;
     scrollbar-width: none;
 }
 .suggestion-popup::-webkit-scrollbar { display: none; }
 .suggestion-popup.active { display: flex; }
 
-/* 候補アイテム */
+/* ★修正: 候補アイテム（独立したボタン） */
 .suggestion-item {
-    padding: 12px 20px;
+    /* 指定サイズとレイアウト */
+    height: 48px;
+    padding: 0 16px; /* 上下中央揃えのためflexで制御 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+    align-self: stretch;
+    
+    /* 検索バーと同じデザイン */
+    background: var(--bg-card);
+    border-radius: 24px;
+    box-shadow: var(--nav-shadow);
+    
+    /* フォント設定 */
     font-size: 14px;
     font-weight: 600;
     color: var(--text-main);
-    border-bottom: 1px solid #f0f0f0;
+    
+    /* 1行省略表示 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
     cursor: pointer;
-    transition: background-color 0.1s;
+    transition: transform 0.1s;
+    border-bottom: none;
 }
-.suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:active { background-color: #f5f5f5; }
+.suggestion-item:active {
+    transform: scale(0.95);
+    background: #f9f9f9;
+}
 
 
 .nav-capsule-btn {
