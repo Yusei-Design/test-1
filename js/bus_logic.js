@@ -6,8 +6,6 @@ import { minToTime } from './utils.js';
 
 // MARK: Search Logic
 export function searchStops(keyword) {
-    // ★修正: データがない場合も、必ず正しい形式のオブジェクトを返すように変更
-    // これにより main.js での "Cannot read properties of undefined" エラーを防ぎます
     if (typeof window.GTFS_DATA === 'undefined') {
         console.warn("GTFS Data is missing or not loaded yet.");
         return { isFavorite: false, results: [] };
@@ -95,8 +93,10 @@ export function getDisplayBusesForStop(stop, times, currentMin, dayIndex) {
     const seenSignatures = new Set();
 
     const nextBuses = filtered.filter(bus => {
-        // A. 時間経過
-        if (bus[1] <= currentMin) return false;
+        // A. 時間経過チェック (修正: 2分前までは許容する)
+        // bus[1] は出発時刻(分)。currentMin は現在時刻(分)。
+        // bus[1] < currentMin - 2  => 現在時刻より2分以上前なら非表示
+        if (bus[1] < currentMin - 2) return false;
 
         const tripId = window.TRIP_LIST[bus[0]];
 
