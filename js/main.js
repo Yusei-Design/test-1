@@ -57,12 +57,14 @@ function setupGlobalEvents() {
     // --- 3. 詳細検索（ポップアップ機能付き） ---
     const detailInput = document.getElementById('detailSearchInput');
     const detailClear = document.getElementById('detailSearchClear');
-    // ★追加: 2つのオーバーレイを取得
+    
+    // オーバーレイ
     const screenOverlay = document.getElementById('screenOverlay');
     const panelOverlay = document.getElementById('panelOverlay');
     const suggestionList = document.getElementById('detailSuggestionList');
 
     if (detailInput) {
+        // 入力時
         detailInput.addEventListener('keyup', (e) => {
             const val = e.target.value.trim();
             if (detailClear) detailClear.style.display = val ? 'block' : 'none';
@@ -71,22 +73,18 @@ function setupGlobalEvents() {
             updateSuggestionList(val);
         });
 
-        // フォーカス時: 両方の暗幕ON
+        // フォーカス時: 暗幕ON & リスト更新
         detailInput.addEventListener('focus', () => {
             if (screenOverlay) screenOverlay.classList.add('active');
             if (panelOverlay) panelOverlay.classList.add('active');
-            if (suggestionList) {
-                suggestionList.classList.add('active');
-                updateSuggestionList(detailInput.value.trim()); 
+            // 入力済みの値があればリスト出す
+            if (detailInput.value.trim()) {
+                updateSuggestionList(detailInput.value.trim());
             }
         });
-
-        // フォーカス外れ: 両方の暗幕OFF
-        detailInput.addEventListener('blur', () => {
-            if (screenOverlay) screenOverlay.classList.remove('active');
-            if (panelOverlay) panelOverlay.classList.remove('active');
-            if (suggestionList) suggestionList.classList.remove('active');
-        });
+        
+        // ★修正: blurイベントでの非表示をやめる
+        // これによりキーボードを閉じてもリストは消えず、ボタンを押せるようになる
     }
 
     if (detailClear) {
@@ -97,6 +95,18 @@ function setupGlobalEvents() {
             detailInput.focus(); 
         });
     }
+
+    // ★追加: 暗幕クリックで検索モード終了（閉じる）
+    const closeSearchMode = () => {
+        if (screenOverlay) screenOverlay.classList.remove('active');
+        if (panelOverlay) panelOverlay.classList.remove('active');
+        if (suggestionList) suggestionList.classList.remove('active');
+        // フォーカスも外す
+        if (detailInput) detailInput.blur();
+    };
+
+    if (screenOverlay) screenOverlay.addEventListener('click', closeSearchMode);
+    if (panelOverlay) panelOverlay.addEventListener('click', closeSearchMode);
 
     // --- 4. 共通ボタン ---
     const backBtns = document.querySelectorAll('.nav-circle-btn');
@@ -115,6 +125,9 @@ function setupGlobalEvents() {
     if(zoomBtn) {
         zoomBtn.addEventListener('click', zoomToBusStop);
     }
+
+    // 外部から呼べるように関数を保持（updateSuggestionList内で使うため）
+    window._closeSearchMode = closeSearchMode;
 }
 
 // MARK: - Update Suggestions
@@ -138,10 +151,10 @@ function updateSuggestionList(keyword) {
 
     list.classList.add('active');
 
-    const candidates = result.results.slice(0, 10);
+    // 最大50件
+    const candidates = result.results.slice(0, 50);
     
     candidates.forEach(item => {
-        // blurイベントより先に発火させるため mousedown を使用
         const el = components.createSuggestionItemElement(item.name, () => {
             const input = document.getElementById('detailSearchInput');
             if (input) {
@@ -150,6 +163,9 @@ function updateSuggestionList(keyword) {
                 if(clearBtn) clearBtn.style.display = 'block';
                 
                 filterByDest(item.name);
+                
+                // ★追加: 選択したら閉じる
+                if (window._closeSearchMode) window._closeSearchMode();
             }
         });
         list.appendChild(el);
