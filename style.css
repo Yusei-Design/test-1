@@ -68,7 +68,13 @@ body {
 }
 
 #screenOverlay { z-index: 5; }
-.panel-overlay { position: absolute; z-index: 50; border-radius: var(--radius-L) var(--radius-L) 0 0; }
+
+/* ★修正: 角丸なし */
+.panel-overlay { 
+    position: absolute; 
+    z-index: 50; 
+    border-radius: 0; 
+}
 
 .panel-container { 
     width: 100%; flex: 1; background: var(--bg-base);
@@ -156,45 +162,40 @@ body {
     bottom: calc(100% + 12px); 
     left: 60px; 
     right: 60px; 
-    max-height: calc(100vh - 150px); 
+    
+    /* ★修正: スクロールなし */
     background: transparent;
     border-radius: 0;
     box-shadow: none;
-    overflow-y: auto; 
     display: none; 
+    
     flex-direction: column-reverse;
     gap: 9px;
+    
     z-index: 110; 
     padding: 20px 0 0 0;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
-.suggestion-popup::-webkit-scrollbar { display: none; }
 .suggestion-popup.active { display: flex; }
 
-/* ★修正: 候補アイテム（高さ固定、シャドウなし） */
+/* ★修正: 候補アイテム（省略表示を有効化） */
 .suggestion-item {
-    /* 高さ固定と最小高さ指定 */
     height: 48px;
     min-height: 48px; 
+    
+    /* FlexをやめてBlockにし、行送りで中央配置 */
+    display: block;
+    line-height: 48px; /* 高さと同じにして垂直中央 */
     padding: 0 16px; 
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 10px;
-    align-self: stretch;
     
     background: var(--bg-card);
     border-radius: 24px;
-    
-    /* シャドウなし */
     box-shadow: none;
     
     font-size: 14px;
     font-weight: 600;
     color: var(--text-main);
     
+    /* これで「…」が効きます */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -202,8 +203,6 @@ body {
     cursor: pointer;
     transition: transform 0.1s;
     border-bottom: none;
-    
-    /* 縮小防止 */
     flex-shrink: 0;
 }
 .suggestion-item:active {
