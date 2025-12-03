@@ -129,7 +129,6 @@ body {
     box-shadow: var(--nav-shadow);
 }
 
-/* ★追加: カプセル型のボタン */
 .nav-capsule-btn {
     flex: 1;
     min-width: 0;
@@ -159,6 +158,18 @@ body {
     min-width: 0; 
 }
 .nav-input::placeholder { color: var(--text-sub); }
+
+/* ★追加: クリアボタンのスタイル */
+.nav-clear {
+    font-size: 14px;
+    color: var(--text-sub);
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 8px;
+    display: none; /* デフォルト非表示 */
+    flex-shrink: 0;
+}
+.nav-clear:active { transform: scale(0.9); color: var(--text-main); }
 
 .nav-circle-btn {
     flex-shrink: 0;
@@ -212,7 +223,7 @@ body {
 .section-label {
     font-size: var(--fs-sub); color: var(--text-sub); 
     margin-bottom: var(--gap-item); padding-left: 8px;
-    margin-top: 24px; 
+    margin-top: 16px; 
 }
 .section-label:first-child { margin-top: 0; }
 
