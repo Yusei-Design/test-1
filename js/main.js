@@ -1,4 +1,6 @@
 // MARK: - Main Entry Point
+// アプリケーションの司令塔。各モジュールを統合し、イベントを処理する。
+
 import { state } from './state.js';
 import * as utils from './utils.js';
 import * as components from './components.js';
@@ -10,6 +12,9 @@ import * as uiState from './ui_state.js';
 window.onload = function() {
     mapManager.initMap();
 
+    // 検索窓などの固定イベント登録
+    setupGlobalEvents();
+
     // データ展開確認
     if(typeof window.GTFS_DATA !== 'undefined') {
         window.GTFS_DATA.forEach(s => state.stopIdMap[s.id] = s);
@@ -18,6 +23,67 @@ window.onload = function() {
         console.error('GTFS Data not loaded. Check index.html bridge script.');
     }
 };
+
+function setupGlobalEvents() {
+    // 検索入力
+    document.getElementById('searchKeyword').addEventListener('keyup', (e) => {
+        doSearch(e.target.value.trim());
+    });
+
+    // 詳細検索入力
+    document.getElementById('detailSearchInput').addEventListener('keyup', (e) => {
+        filterByDest(e.target.value.trim());
+    });
+
+    // 戻るボタン (Main/Detail/Route共通)
+    const backBtns = document.querySelectorAll('.nav-circle-btn');
+    backBtns.forEach(btn => {
+        if(btn.textContent === '＜') {
+            btn.addEventListener('click', goBack);
+        }
+    });
+
+    // お気に入りボタン
+    document.getElementById('btnFav').addEventListener('click', toggleFavorite);
+
+    // のりばクローズアップボタン
+    const zoomBtn = document.querySelector('.nav-capsule-btn');
+    if(zoomBtn) {
+        zoomBtn.addEventListener('click', zoomToBusStop);
+    }
+}
+
+// MARK: - Navigation Logic
+function goBack() {
+    const panel = document.getElementById('appPanel');
+    
+    // ルート詳細 -> 停留所詳細
+    if (panel.classList.contains('state-route')) {
+        uiState.updateState('detail');
+        
+        // 停留所位置へマップを再ズーム
+        if (state.currentStopDataMap) {
+            const stops = Object.values(state.currentStopDataMap).map(item => item.stop);
+            if (stops.length > 0) {
+                const latLngs = stops.map(s => [s.lat, s.lon]);
+                state.map.fitBounds(latLngs, { padding: [80, 80] });
+            }
+        }
+        
+        // リストとマーカーの状態を再描画して復元
+        renderPlatforms();
+
+    // 停留所詳細 -> メイン（検索）
+    } else if (panel.classList.contains('state-detail')) {
+        uiState.updateState('main');
+        
+        // メインに戻った時のリセットは uiState.updateState 内で行われる
+        const dInput = document.getElementById('detailSearchInput');
+        if(dInput) dInput.value = '';
+        const sInput = document.getElementById('searchKeyword');
+        if(sInput) doSearch(sInput.value.trim());
+    }
+}
 
 // MARK: - Search Functions
 export function doSearch(keyword) {
@@ -30,6 +96,7 @@ export function doSearch(keyword) {
     
     if (!searchResult || !searchResult.results) return;
     
+    // UI反映
     if (searchResult.results.length === 0) {
         if (searchResult.isFavorite && keyword === '') {
             if(emptyMsg) emptyMsg.style.display = 'block';
@@ -41,19 +108,17 @@ export function doSearch(keyword) {
 
     if(emptyMsg) emptyMsg.style.display = 'none';
 
+    // お気に入りラベル
     if (searchResult.isFavorite && keyword === '') {
-        // ★修正: ここもinnerHTML += を避けて appendChild に変更（念のため）
-        const labelDiv = document.createElement('div');
-        labelDiv.innerHTML = components.createSectionLabelHTML('お気に入りのバス停');
-        container.appendChild(labelDiv.firstElementChild);
+        container.appendChild(components.createSectionLabelElement('お気に入りのバス停'));
     }
 
+    // リスト生成
     searchResult.results.forEach(item => {
-        const div = document.createElement('div');
-        div.innerHTML = components.createListItemHTML(item.name, item.stops.length);
-        const child = div.firstElementChild;
-        child.onclick = () => selectGroup(item.name, item.stops);
-        container.appendChild(child);
+        const el = components.createListItemElement(item.name, item.stops.length, () => {
+            selectGroup(item.name, item.stops);
+        });
+        container.appendChild(el);
     });
 }
 
@@ -85,24 +150,31 @@ function selectGroup(name, stops) {
         });
     });
 
-    const sortedRoutes = Array.from(routesMap.keys()).sort((a, b) => 
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-    );
-    const tagsHtml = sortedRoutes.map(ln => {
-        const style = routesMap.get(ln);
-        return components.createRouteTagHTML(ln, style.c, style.tc, `setRouteFilter('${ln}')`);
-    }).join('');
-
-    const sortedStops = [...stops].sort((a,b) => (a.desc || '').localeCompare(b.desc || ''));
-    let buttonsHtml = components.createFilterButtonHTML('ALL', 'すべて', true, "setPlatformFilter('ALL')");
-    sortedStops.forEach(stop => {
-        const label = stop.desc || '不明';
-        buttonsHtml += components.createFilterButtonHTML(stop.id, label, false, `setPlatformFilter('${stop.id}')`);
-    });
-
+    // 詳細ヘッダー構築
     const viewDetail = document.getElementById('viewDetail');
-    viewDetail.innerHTML = components.createDetailHeaderHTML(name, tagsHtml, buttonsHtml);
+    viewDetail.innerHTML = ''; // クリア
+
+    // 1. タイトル
+    viewDetail.appendChild(components.createDetailHeaderElement(name));
+
+    // 2. 系統タグ
+    viewDetail.appendChild(components.createTagContainer(routesMap, (route) => {
+        setRouteFilter(route);
+    }));
+
+    // 3. フィルタボタン
+    // 並び替え
+    const sortedStops = [...stops].sort((a,b) => (a.desc || '').localeCompare(b.desc || ''));
+    viewDetail.appendChild(components.createFilterCarousel(sortedStops, (id) => {
+        setPlatformFilter(id);
+    }));
+
+    // 4. リストコンテナ (IDを付与して後で使う)
+    const listDiv = document.createElement('div');
+    listDiv.id = 'platformList';
+    viewDetail.appendChild(listDiv);
     
+    // データセット
     state.currentStopDataMap = stopDataMap;
     state.currentFilter = { platformId: 'ALL', destKeyword: '', targetStopIds: null, route: 'ALL' };
     
@@ -114,9 +186,10 @@ function selectGroup(name, stops) {
 export function renderPlatforms() {
     const filter = state.currentFilter;
     const container = document.getElementById('platformList');
+    if (!container) return;
+    
     container.innerHTML = '';
     
-    // マーカーリセット
     mapManager.resetMarkersStyle();
     
     const now = new Date();
@@ -135,15 +208,10 @@ export function renderPlatforms() {
 
         mapManager.setMarkerActive(stop.id);
 
-        // ★修正ポイント: container.innerHTML += ... をやめる
-        // これを行うと、それまでに追加したカードのイベントリスナーが全て消えてしまうため
-        const labelDiv = document.createElement('div');
-        labelDiv.innerHTML = components.createSectionLabelHTML(`のりば ${stop.desc || '不明'}`);
-        // firstElementChild を appendChild する
-        if (labelDiv.firstElementChild) {
-            container.appendChild(labelDiv.firstElementChild);
-        }
+        // 見出し
+        container.appendChild(components.createSectionLabelElement(`のりば ${stop.desc || '不明'}`));
 
+        // カード生成
         nextBuses.forEach(bus => {
             const tripId = window.TRIP_LIST[bus[0]];
             const timeStr = utils.minToTime(bus[1]);
@@ -155,26 +223,23 @@ export function renderPlatforms() {
             const diff = bus[1] - currentMin;
             const remainMsg = diff <= 0 ? "まもなく" : `${diff}分後`;
 
-            const div = document.createElement('div');
-            div.innerHTML = components.createBusCardHTML({
+            const card = components.createBusCardElement({
                 lineName, 
                 color: routeInfo.c, 
                 textColor: routeInfo.t, 
                 destName, 
                 remainMsg, 
                 timeStr
+            }, () => {
+                showTripDetail(tripId, stop.id, shapeId, lineName, routeInfo.c, routeInfo.t, destName);
             });
-            const card = div.firstElementChild;
-            
-            card.onclick = () => showTripDetail(tripId, stop.id, shapeId, lineName, routeInfo.c, routeInfo.t, destName);
             
             container.appendChild(card);
         });
     });
 
     if (!hasBus) {
-        // ここは中身が空の時だけなので innerHTML でOK
-        container.innerHTML = components.createEmptyMsgHTML('該当するバスはありません');
+        container.appendChild(components.createEmptyMsgElement('該当するバスはありません'));
     }
 }
 
@@ -188,9 +253,10 @@ function setRouteFilter(route) {
     if (state.currentFilter.route === route) state.currentFilter.route = 'ALL';
     else state.currentFilter.route = route;
     
+    // タグの不透明度制御
     const tags = document.querySelectorAll('.tag-badge');
     tags.forEach(t => {
-        if(state.currentFilter.route === 'ALL' || t.innerText.includes(route)) t.style.opacity = '1';
+        if(state.currentFilter.route === 'ALL' || t.textContent === route) t.style.opacity = '1';
         else t.style.opacity = '0.3';
     });
     renderPlatforms();
@@ -217,7 +283,6 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     state.activeRouteStopId = currentStopId;
 
     mapManager.highlightMarker(currentStopId);
-    
     mapManager.drawRoutePolyline(shapeId);
 
     const stops = window.TRIP_STOPS_DATA[tripId];
@@ -226,8 +291,10 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     const viewRoute = document.getElementById('viewRoute');
     viewRoute.innerHTML = ''; 
 
-    viewRoute.innerHTML += components.createRouteHeaderHTML(lineName, lineColor, lineText, destName);
+    // ヘッダー
+    viewRoute.appendChild(components.createRouteHeaderElement(lineName, lineColor, lineText, destName));
 
+    // タイムライン
     const tlBox = document.createElement('div');
     tlBox.className = 'timeline-box';
     
@@ -237,12 +304,9 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
         const isCurrent = (s.i === currentStopId);
         const time = s.t.substring(0, 5);
         
-        const div = document.createElement('div');
-        div.innerHTML = components.createTimelineItemHTML(time, stopInfo.name, isCurrent, "");
-        const row = div.firstElementChild;
-        
-        row.onclick = () => mapManager.zoomToStop(stopInfo.id);
-        
+        const row = components.createTimelineItemElement(time, stopInfo.name, isCurrent, () => {
+            mapManager.zoomToStop(stopInfo.id);
+        });
         tlBox.appendChild(row);
     });
     viewRoute.appendChild(tlBox);
@@ -253,6 +317,11 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
         const activeEl = viewRoute.querySelector('.active');
         if(activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
+}
+
+// クローズアップボタン機能
+function zoomToBusStop() {
+    mapManager.zoomToStop(state.activeRouteStopId);
 }
 
 // MARK: - Favorite Functions
@@ -271,12 +340,3 @@ function toggleFavorite() {
     localStorage.setItem('kyoto_bus_fav_names', JSON.stringify(state.favoriteNames));
     updateFavButtonState();
 }
-
-// MARK: - Expose to Window
-window.handleSearch = (e) => doSearch(e.target.value.trim());
-window.filterByDest = (e) => filterByDest(e.target.value.trim());
-window.setPlatformFilter = setPlatformFilter;
-window.setRouteFilter = setRouteFilter;
-window.goBack = uiState.goBack;
-window.toggleFavorite = toggleFavorite;
-window.zoomToBusStop = () => mapManager.zoomToStop(state.activeRouteStopId);
