@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kyoto City Bus</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-ant-path"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="panel-container state-main" id="appPanel">
+        
+        <div class="views-wrapper">
+            <div class="view-slide" id="viewMain">
+                <div class="empty-msg" id="msgEmpty">下の検索バーからバス停を検索<br>お気に入り登録でここに表示できます</div>
+                <div id="listMain" style="padding-top: 20px;"></div>
+            </div>
+
+            <div class="view-slide" id="viewDetail"></div>
+            <div class="view-slide" id="viewRoute"></div>
+        </div>
+
+        <div class="nav-area">
+            
+            <div class="nav-group" id="navMain">
+                <div class="nav-capsule">
+                    <span class="nav-icon">🔍</span>
+                    <input type="text" class="nav-input" id="searchKeyword" placeholder="バス停を検索" onkeyup="handleSearch(event)">
+                </div>
+            </div>
+
+            <div class="nav-group" id="navDetail">
+                <button class="nav-circle-btn" onclick="goBack()">＜</button>
+                <div class="nav-capsule">
+                    <span class="nav-icon">🚌</span>
+                    <input type="text" class="nav-input" id="detailSearchInput" placeholder="行きたいバス停" onkeyup="filterByDest(event)">
+                </div>
+                <button class="nav-circle-btn" id="btnFav" onclick="toggleFavorite()">★</button>
+            </div>
+
+            <div class="nav-group" id="navRoute">
+                <button class="nav-circle-btn" onclick="goBack()">＜</button>
+                <button class="nav-capsule-btn" onclick="zoomToBusStop()">
+                    📍 のりばをクローズアップ
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="stops_data.js"></script>
+    <script src="timetable_data.js"></script>
+    <script src="shapes_data.js"></script>
+    <script src="trip_stops_data.js"></script>
+    
+    <script>
+        console.log("Checking data loading...");
+        if (typeof GTFS_DATA !== 'undefined') {
+            window.GTFS_DATA = GTFS_DATA;
+            console.log("✅ GTFS_DATA Loaded");
+        } else {
+            console.error("❌ GTFS_DATA Missing");
+        }
+
+        if (typeof TIMETABLE_DATA !== 'undefined') window.TIMETABLE_DATA = TIMETABLE_DATA;
+        if (typeof SHAPES_DATA !== 'undefined') window.SHAPES_DATA = SHAPES_DATA;
+        if (typeof TRIP_STOPS_DATA !== 'undefined') window.TRIP_STOPS_DATA = TRIP_STOPS_DATA;
+        
+        if (typeof ROUTE_LIST !== 'undefined') window.ROUTE_LIST = ROUTE_LIST;
+        if (typeof DEST_LIST !== 'undefined') window.DEST_LIST = DEST_LIST;
+        if (typeof TRIP_LIST !== 'undefined') window.TRIP_LIST = TRIP_LIST;
+        if (typeof SERVICE_LIST !== 'undefined') window.SERVICE_LIST = SERVICE_LIST;
+        if (typeof SHAPE_LIST !== 'undefined') window.SHAPE_LIST = SHAPE_LIST;
+        if (typeof CALENDAR_DATA !== 'undefined') window.CALENDAR_DATA = CALENDAR_DATA;
+    </script>
+
+    <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
