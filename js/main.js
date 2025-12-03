@@ -58,13 +58,11 @@ function setupGlobalEvents() {
     const detailInput = document.getElementById('detailSearchInput');
     const detailClear = document.getElementById('detailSearchClear');
     
-    // オーバーレイ
     const screenOverlay = document.getElementById('screenOverlay');
     const panelOverlay = document.getElementById('panelOverlay');
     const suggestionList = document.getElementById('detailSuggestionList');
 
     if (detailInput) {
-        // 入力時
         detailInput.addEventListener('keyup', (e) => {
             const val = e.target.value.trim();
             if (detailClear) detailClear.style.display = val ? 'block' : 'none';
@@ -73,7 +71,6 @@ function setupGlobalEvents() {
             updateSuggestionList(val);
         });
 
-        // フォーカス時: 暗幕ON & リスト更新
         detailInput.addEventListener('focus', () => {
             if (screenOverlay) screenOverlay.classList.add('active');
             if (panelOverlay) panelOverlay.classList.add('active');
@@ -145,7 +142,6 @@ function updateSuggestionList(keyword) {
 
     list.classList.add('active');
 
-    // ★修正: 5件に制限
     const candidates = result.results.slice(0, 5);
     
     candidates.forEach(item => {
@@ -185,8 +181,22 @@ function goBack() {
         
         const dInput = document.getElementById('detailSearchInput');
         const dClear = document.getElementById('detailSearchClear');
-        if(dInput) dInput.value = '';
+        
+        // 入力リセット
+        if(dInput) {
+            dInput.value = '';
+            dInput.blur(); // フォーカス解除
+        }
         if(dClear) dClear.style.display = 'none';
+        
+        // ★修正: 戻る時に暗幕とリストを強制的に閉じる
+        const screenOverlay = document.getElementById('screenOverlay');
+        const panelOverlay = document.getElementById('panelOverlay');
+        const suggestionList = document.getElementById('detailSuggestionList');
+        
+        if (screenOverlay) screenOverlay.classList.remove('active');
+        if (panelOverlay) panelOverlay.classList.remove('active');
+        if (suggestionList) suggestionList.classList.remove('active');
         
         const sInput = document.getElementById('searchKeyword');
         if(sInput) doSearch(sInput.value.trim());
