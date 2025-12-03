@@ -10,43 +10,56 @@ import * as uiState from './ui_state.js';
 
 // MARK: - Init
 window.onload = function() {
+    // 地図の初期化
     mapManager.initMap();
 
-    // 検索窓などの固定イベント登録
+    // イベントリスナーの一括登録
     setupGlobalEvents();
 
-    // データ展開確認
+    // データ展開確認 (index.htmlでの読み込みチェック)
     if(typeof window.GTFS_DATA !== 'undefined') {
         window.GTFS_DATA.forEach(s => state.stopIdMap[s.id] = s);
-        doSearch(''); 
+        doSearch(''); // 初期表示（お気に入りリスト等）
     } else {
         console.error('GTFS Data not loaded. Check index.html bridge script.');
     }
 };
 
+// MARK: - Global Events Setup
+// HTML側に onclick="" を書かず、ここで一括してイベントを設定する
 function setupGlobalEvents() {
-    // 検索入力
-    document.getElementById('searchKeyword').addEventListener('keyup', (e) => {
-        doSearch(e.target.value.trim());
-    });
+    // 検索入力 (メイン)
+    const searchInput = document.getElementById('searchKeyword');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+            doSearch(e.target.value.trim());
+        });
+    }
 
-    // 詳細検索入力
-    document.getElementById('detailSearchInput').addEventListener('keyup', (e) => {
-        filterByDest(e.target.value.trim());
-    });
+    // 詳細検索入力 (絞り込み)
+    const detailInput = document.getElementById('detailSearchInput');
+    if (detailInput) {
+        detailInput.addEventListener('keyup', (e) => {
+            filterByDest(e.target.value.trim());
+        });
+    }
 
     // 戻るボタン (Main/Detail/Route共通)
     const backBtns = document.querySelectorAll('.nav-circle-btn');
     backBtns.forEach(btn => {
+        // テキストで判定して戻るボタンのみに付与
         if(btn.textContent === '＜') {
             btn.addEventListener('click', goBack);
         }
     });
 
     // お気に入りボタン
-    document.getElementById('btnFav').addEventListener('click', toggleFavorite);
+    const favBtn = document.getElementById('btnFav');
+    if (favBtn) {
+        favBtn.addEventListener('click', toggleFavorite);
+    }
 
-    // のりばクローズアップボタン
+    // のりばクローズアップボタン (動的に生成される場合もあるが、nav内なら固定で存在想定)
     const zoomBtn = document.querySelector('.nav-capsule-btn');
     if(zoomBtn) {
         zoomBtn.addEventListener('click', zoomToBusStop);
@@ -77,7 +90,7 @@ function goBack() {
     } else if (panel.classList.contains('state-detail')) {
         uiState.updateState('main');
         
-        // メインに戻った時のリセットは uiState.updateState 内で行われる
+        // 入力欄リセット
         const dInput = document.getElementById('detailSearchInput');
         if(dInput) dInput.value = '';
         const sInput = document.getElementById('searchKeyword');
@@ -92,11 +105,13 @@ export function doSearch(keyword) {
     
     container.innerHTML = '';
     
+    // ロジック呼び出し
     const searchResult = busLogic.searchStops(keyword);
     
+    // エラーガード
     if (!searchResult || !searchResult.results) return;
     
-    // UI反映
+    // 結果なし / お気に入りなしの場合
     if (searchResult.results.length === 0) {
         if (searchResult.isFavorite && keyword === '') {
             if(emptyMsg) emptyMsg.style.display = 'block';
@@ -108,9 +123,13 @@ export function doSearch(keyword) {
 
     if(emptyMsg) emptyMsg.style.display = 'none';
 
-    // お気に入りラベル
+    // お気に入りラベルの表示
     if (searchResult.isFavorite && keyword === '') {
-        container.appendChild(components.createSectionLabelElement('お気に入りのバス停'));
+        const labelDiv = document.createElement('div');
+        labelDiv.innerHTML = components.createSectionLabelHTML('お気に入りのバス停');
+        if (labelDiv.firstElementChild) {
+            container.appendChild(labelDiv.firstElementChild);
+        }
     }
 
     // リスト生成
@@ -126,6 +145,7 @@ export function doSearch(keyword) {
 function selectGroup(name, stops) {
     state.currentViewingStopName = name;
     
+    // 地図更新 & クリック時の絞り込み連携
     mapManager.updateMarkersForDetail(stops, (stopId) => {
         setPlatformFilter(stopId);
     });
@@ -134,6 +154,7 @@ function selectGroup(name, stops) {
 
     if (typeof window.TIMETABLE_DATA === 'undefined') return;
 
+    // データ構造化
     const stopDataMap = {}; 
     const routesMap = new Map();
 
@@ -150,9 +171,9 @@ function selectGroup(name, stops) {
         });
     });
 
-    // 詳細ヘッダー構築
+    // --- DOM構築 ---
     const viewDetail = document.getElementById('viewDetail');
-    viewDetail.innerHTML = ''; // クリア
+    viewDetail.innerHTML = ''; 
 
     // 1. タイトル
     viewDetail.appendChild(components.createDetailHeaderElement(name));
@@ -162,19 +183,18 @@ function selectGroup(name, stops) {
         setRouteFilter(route);
     }));
 
-    // 3. フィルタボタン
-    // 並び替え
+    // 3. フィルタボタン（のりば選択）
     const sortedStops = [...stops].sort((a,b) => (a.desc || '').localeCompare(b.desc || ''));
     viewDetail.appendChild(components.createFilterCarousel(sortedStops, (id) => {
         setPlatformFilter(id);
     }));
 
-    // 4. リストコンテナ (IDを付与して後で使う)
+    // 4. リストコンテナ
     const listDiv = document.createElement('div');
     listDiv.id = 'platformList';
     viewDetail.appendChild(listDiv);
     
-    // データセット
+    // 状態セット
     state.currentStopDataMap = stopDataMap;
     state.currentFilter = { platformId: 'ALL', destKeyword: '', targetStopIds: null, route: 'ALL' };
     
@@ -190,6 +210,7 @@ export function renderPlatforms() {
     
     container.innerHTML = '';
     
+    // 一旦マーカーをリセット
     mapManager.resetMarkersStyle();
     
     const now = new Date();
@@ -199,19 +220,26 @@ export function renderPlatforms() {
     let hasBus = false;
 
     Object.values(state.currentStopDataMap).forEach(({ stop, times }) => {
+        // のりばフィルタ
         if (filter.platformId !== 'ALL' && stop.id !== filter.platformId) return;
         
+        // ロジックにて表示対象のバスを取得
         const nextBuses = busLogic.getDisplayBusesForStop(stop, times, currentMin, dayIndex);
 
         if (nextBuses.length === 0) return;
         hasBus = true;
 
+        // 対象のりばのマーカーを黒くする（追加）
         mapManager.setMarkerActive(stop.id);
 
-        // 見出し
-        container.appendChild(components.createSectionLabelElement(`のりば ${stop.desc || '不明'}`));
+        // のりば見出し
+        const labelDiv = document.createElement('div');
+        labelDiv.innerHTML = components.createSectionLabelHTML(`のりば ${stop.desc || '不明'}`);
+        if (labelDiv.firstElementChild) {
+            container.appendChild(labelDiv.firstElementChild);
+        }
 
-        // カード生成
+        // バスカード生成
         nextBuses.forEach(bus => {
             const tripId = window.TRIP_LIST[bus[0]];
             const timeStr = utils.minToTime(bus[1]);
@@ -220,8 +248,16 @@ export function renderPlatforms() {
             const routeInfo = window.ROUTE_LIST[bus[5]];
             const lineName = routeInfo.n.replace('市バス', '');
             
+            // 残り時間メッセージの生成
             const diff = bus[1] - currentMin;
-            const remainMsg = diff <= 0 ? "まもなく" : `${diff}分後`;
+            let remainMsg = "";
+            if (diff > 0) {
+                remainMsg = `${diff}分後`;
+            } else if (diff === 0) {
+                remainMsg = "現在時刻";
+            } else {
+                remainMsg = "出発済み";
+            }
 
             const card = components.createBusCardElement({
                 lineName, 
@@ -243,6 +279,7 @@ export function renderPlatforms() {
     }
 }
 
+// MARK: - Filter Actions
 function setPlatformFilter(id) {
     state.currentFilter.platformId = id;
     uiState.scrollFilterButton(id);
@@ -280,9 +317,13 @@ function filterByDest(val) {
 function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lineText, destName) {
     if (typeof window.TRIP_STOPS_DATA === 'undefined') { alert("経由データがありません"); return; }
     
+    // 状態保存
     state.activeRouteStopId = currentStopId;
 
+    // マーカーハイライト（出発地のみ黒く）
     mapManager.highlightMarker(currentStopId);
+    
+    // ルート線描画
     mapManager.drawRoutePolyline(shapeId);
 
     const stops = window.TRIP_STOPS_DATA[tripId];
@@ -304,6 +345,7 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
         const isCurrent = (s.i === currentStopId);
         const time = s.t.substring(0, 5);
         
+        // タイムライン行生成
         const row = components.createTimelineItemElement(time, stopInfo.name, isCurrent, () => {
             mapManager.zoomToStop(stopInfo.id);
         });
@@ -311,15 +353,17 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     });
     viewRoute.appendChild(tlBox);
     
+    // 画面遷移
     uiState.updateState('route');
     
+    // 現在地にスクロール
     setTimeout(() => {
         const activeEl = viewRoute.querySelector('.active');
         if(activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 300);
 }
 
-// クローズアップボタン機能
+// MARK: - Map Zoom Action
 function zoomToBusStop() {
     mapManager.zoomToStop(state.activeRouteStopId);
 }
