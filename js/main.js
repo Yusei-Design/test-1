@@ -21,50 +21,81 @@ window.onload = function() {
 
 // MARK: - Global Events
 function setupGlobalEvents() {
-    // 検索入力
+    // --- 1. メイン検索 ---
     const searchInput = document.getElementById('searchKeyword');
     const searchClear = document.getElementById('searchClear');
 
     if (searchInput) {
         searchInput.addEventListener('keyup', (e) => {
             const val = e.target.value;
-            // 入力があれば×ボタンを表示
-            searchClear.style.display = val ? 'block' : 'none';
+            if (searchClear) searchClear.style.display = val ? 'block' : 'none';
             doSearch(val.trim());
         });
     }
-
-    // ★追加: クリアボタンの動作
     if (searchClear) {
         searchClear.addEventListener('click', () => {
             searchInput.value = '';
             searchClear.style.display = 'none';
-            doSearch(''); // 空検索（お気に入り表示に戻る）
+            doSearch('');
             searchInput.focus();
         });
     }
 
-    // ★追加: Homeボタンの動作
+    // --- 2. Homeボタン ---
     const homeBtn = document.getElementById('btnHome');
     if (homeBtn) {
         homeBtn.addEventListener('click', () => {
             if (searchInput) {
                 searchInput.value = '';
-                searchClear.style.display = 'none';
+                if(searchClear) searchClear.style.display = 'none';
                 doSearch('');
             }
-            // 必要ならマップもリセット
             mapManager.resetMapView();
         });
     }
 
+    // --- 3. 詳細検索（ポップアップ機能付き） ---
     const detailInput = document.getElementById('detailSearchInput');
+    const detailClear = document.getElementById('detailSearchClear');
+    const overlay = document.getElementById('screenOverlay');
+    const suggestionList = document.getElementById('detailSuggestionList');
+
     if (detailInput) {
+        // 入力時: フィルタ実行 ＆ 候補リスト更新
         detailInput.addEventListener('keyup', (e) => {
-            filterByDest(e.target.value.trim());
+            const val = e.target.value.trim();
+            if (detailClear) detailClear.style.display = val ? 'block' : 'none';
+            
+            filterByDest(val);
+            updateSuggestionList(val);
+        });
+
+        // フォーカス時: 暗幕ON & リスト表示
+        detailInput.addEventListener('focus', () => {
+            if (overlay) overlay.classList.add('active');
+            if (suggestionList) {
+                suggestionList.classList.add('active');
+                updateSuggestionList(detailInput.value.trim()); // 現在の値でリスト更新
+            }
+        });
+
+        // フォーカス外れ: 暗幕OFF & リスト非表示
+        detailInput.addEventListener('blur', () => {
+            if (overlay) overlay.classList.remove('active');
+            if (suggestionList) suggestionList.classList.remove('active');
         });
     }
 
+    if (detailClear) {
+        detailClear.addEventListener('click', () => {
+            detailInput.value = '';
+            detailClear.style.display = 'none';
+            filterByDest('');
+            detailInput.focus(); // フォーカス戻してリスト再表示
+        });
+    }
+
+    // --- 4. 共通ボタン ---
     const backBtns = document.querySelectorAll('.nav-circle-btn');
     backBtns.forEach(btn => {
         if(btn.textContent === '＜') {
@@ -81,6 +112,53 @@ function setupGlobalEvents() {
     if(zoomBtn) {
         zoomBtn.addEventListener('click', zoomToBusStop);
     }
+}
+
+// MARK: - Update Suggestions
+function updateSuggestionList(keyword) {
+    const list = document.getElementById('detailSuggestionList');
+    if (!list) return;
+    
+    list.innerHTML = ''; // クリア
+
+    if (!keyword) {
+        // 空の時は何も出さない（または履歴などを出すならここ）
+        list.classList.remove('active');
+        return;
+    }
+
+    // 検索ロジックを再利用（busLogic.searchStops は全バス停から探すので使える）
+    const result = busLogic.searchStops(keyword);
+    
+    if (!result || result.results.length === 0) {
+        // 候補なし
+        list.classList.remove('active');
+        return;
+    }
+
+    // 候補ありなら表示
+    list.classList.add('active');
+
+    // 最大10件くらい表示
+    const candidates = result.results.slice(0, 10);
+    
+    candidates.forEach(item => {
+        // アイテム生成（クリック時の動作も定義）
+        const el = components.createSuggestionItemElement(item.name, () => {
+            // クリック時: 入力欄にセットして絞り込み
+            const input = document.getElementById('detailSearchInput');
+            if (input) {
+                input.value = item.name;
+                // ×ボタン表示
+                const clearBtn = document.getElementById('detailSearchClear');
+                if(clearBtn) clearBtn.style.display = 'block';
+                
+                // 絞り込み実行
+                filterByDest(item.name);
+            }
+        });
+        list.appendChild(el);
+    });
 }
 
 // MARK: - Navigation Logic
@@ -101,12 +179,14 @@ function goBack() {
     } else if (panel.classList.contains('state-detail')) {
         uiState.updateState('main');
         
+        // メインに戻ったら詳細検索はリセット
         const dInput = document.getElementById('detailSearchInput');
+        const dClear = document.getElementById('detailSearchClear');
         if(dInput) dInput.value = '';
-        const sInput = document.getElementById('searchKeyword');
+        if(dClear) dClear.style.display = 'none';
         
-        // メインに戻る時も検索状態を復元（入力があればそのまま）
-        if (sInput) doSearch(sInput.value.trim());
+        const sInput = document.getElementById('searchKeyword');
+        if(sInput) doSearch(sInput.value.trim());
     }
 }
 
