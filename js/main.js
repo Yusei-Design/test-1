@@ -58,11 +58,13 @@ function setupGlobalEvents() {
     const detailInput = document.getElementById('detailSearchInput');
     const detailClear = document.getElementById('detailSearchClear');
     
+    // オーバーレイ
     const screenOverlay = document.getElementById('screenOverlay');
     const panelOverlay = document.getElementById('panelOverlay');
     const suggestionList = document.getElementById('detailSuggestionList');
 
     if (detailInput) {
+        // 入力時
         detailInput.addEventListener('keyup', (e) => {
             const val = e.target.value.trim();
             if (detailClear) detailClear.style.display = val ? 'block' : 'none';
@@ -71,6 +73,7 @@ function setupGlobalEvents() {
             updateSuggestionList(val);
         });
 
+        // フォーカス時: 暗幕ON & リスト更新
         detailInput.addEventListener('focus', () => {
             if (screenOverlay) screenOverlay.classList.add('active');
             if (panelOverlay) panelOverlay.classList.add('active');
@@ -142,6 +145,7 @@ function updateSuggestionList(keyword) {
 
     list.classList.add('active');
 
+    // 5件に制限
     const candidates = result.results.slice(0, 5);
     
     candidates.forEach(item => {
@@ -185,11 +189,11 @@ function goBack() {
         // 入力リセット
         if(dInput) {
             dInput.value = '';
-            dInput.blur(); // フォーカス解除
+            dInput.blur(); 
         }
         if(dClear) dClear.style.display = 'none';
         
-        // ★修正: 戻る時に暗幕とリストを強制的に閉じる
+        // 戻る時に暗幕とリストを閉じる
         const screenOverlay = document.getElementById('screenOverlay');
         const panelOverlay = document.getElementById('panelOverlay');
         const suggestionList = document.getElementById('detailSuggestionList');
