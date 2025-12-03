@@ -144,8 +144,10 @@ body {
     color: var(--text-main);
     cursor: pointer;
     white-space: nowrap;
+    /* ★追加: アニメーション */
+    transition: transform 0.1s; 
 }
-.nav-capsule-btn:active { transform: scale(0.98); background: #f9f9f9; }
+.nav-capsule-btn:active { transform: scale(0.95); background: #f9f9f9; }
 
 .nav-icon { 
     font-size: 16px; color: var(--text-main); margin-right: 12px; flex-shrink: 0; 
@@ -159,14 +161,13 @@ body {
 }
 .nav-input::placeholder { color: var(--text-sub); }
 
-/* ★追加: クリアボタンのスタイル */
 .nav-clear {
-    font-size: 16px;
+    font-size: 16px; /* ★修正: 16px */
     color: var(--text-sub);
     cursor: pointer;
     padding: 4px;
     margin-left: 8px;
-    display: none; /* デフォルト非表示 */
+    display: none;
     flex-shrink: 0;
 }
 .nav-clear:active { transform: scale(0.9); color: var(--text-main); }
@@ -178,8 +179,10 @@ body {
     display: flex; align-items: center; justify-content: center;
     box-shadow: var(--nav-shadow); 
     cursor: pointer; color: var(--text-main); font-size: 18px; font-weight: 700;
+    /* ★追加: アニメーション */
+    transition: transform 0.1s;
 }
-.nav-circle-btn:active { transform: scale(0.95); }
+.nav-circle-btn:active { transform: scale(0.9); }
 
 /* --- UIコンポーネント --- */
 .list-item {
@@ -187,7 +190,11 @@ body {
     border-radius: var(--radius-L); 
     margin-bottom: var(--gap-item);
     cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    /* ★追加: アニメーション */
+    transition: transform 0.1s, background-color 0.1s;
 }
+.list-item:active { transform: scale(0.98); background: #fafafa; }
+
 .list-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; display: block; }
 .list-sub { font-size: var(--fs-sub); color: var(--text-sub); font-weight: 500; }
 
@@ -201,7 +208,10 @@ body {
     height: 20px; padding: 0 8px; border-radius: 4px; 
     color: #fff; font-size: 10px; font-weight: 700; 
     display: flex; align-items: center; justify-content: center; white-space: nowrap;
+    /* ★追加: アニメーション */
+    transition: opacity 0.2s, transform 0.1s;
 }
+.tag-badge:active { transform: scale(0.95); }
 
 .filter-carousel { 
     display: flex; gap: 8px; overflow-x: auto; 
@@ -216,8 +226,10 @@ body {
     font-weight: 600; font-size: var(--fs-sub); 
     border: none; cursor: pointer; white-space: nowrap; 
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s ease;
+    /* ★追加: アニメーション */
+    transition: all 0.2s ease, transform 0.1s;
 }
+.filter-chip:active { transform: scale(0.95); }
 .filter-chip.active { background: var(--text-main); color: #ffffff; }
 
 .section-label {
@@ -238,8 +250,10 @@ body {
     justify-content: space-between; 
     cursor: pointer; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    /* ★追加: アニメーション */
+    transition: transform 0.1s, background-color 0.1s;
 }
-.bus-card:active { background: #fafafa; }
+.bus-card:active { transform: scale(0.98); background: #fafafa; }
 
 .bus-left-col {
     display: flex; 
