@@ -42,7 +42,10 @@ export function doSearch(keyword) {
     if(emptyMsg) emptyMsg.style.display = 'none';
 
     if (searchResult.isFavorite && keyword === '') {
-        container.innerHTML += components.createSectionLabelHTML('お気に入りのバス停');
+        // ★修正: ここもinnerHTML += を避けて appendChild に変更（念のため）
+        const labelDiv = document.createElement('div');
+        labelDiv.innerHTML = components.createSectionLabelHTML('お気に入りのバス停');
+        container.appendChild(labelDiv.firstElementChild);
     }
 
     searchResult.results.forEach(item => {
@@ -113,7 +116,7 @@ export function renderPlatforms() {
     const container = document.getElementById('platformList');
     container.innerHTML = '';
     
-    // 一旦すべて白丸にリセット
+    // マーカーリセット
     mapManager.resetMarkersStyle();
     
     const now = new Date();
@@ -130,11 +133,16 @@ export function renderPlatforms() {
         if (nextBuses.length === 0) return;
         hasBus = true;
 
-        // ★修正: 排他制御(highlight)ではなく、追加制御(setActive)を使用
-        // これにより、ループで複数ののりばが連続して黒丸になります
         mapManager.setMarkerActive(stop.id);
 
-        container.innerHTML += components.createSectionLabelHTML(`のりば ${stop.desc || '不明'}`);
+        // ★修正ポイント: container.innerHTML += ... をやめる
+        // これを行うと、それまでに追加したカードのイベントリスナーが全て消えてしまうため
+        const labelDiv = document.createElement('div');
+        labelDiv.innerHTML = components.createSectionLabelHTML(`のりば ${stop.desc || '不明'}`);
+        // firstElementChild を appendChild する
+        if (labelDiv.firstElementChild) {
+            container.appendChild(labelDiv.firstElementChild);
+        }
 
         nextBuses.forEach(bus => {
             const tripId = window.TRIP_LIST[bus[0]];
@@ -148,7 +156,6 @@ export function renderPlatforms() {
             const remainMsg = diff <= 0 ? "まもなく" : `${diff}分後`;
 
             const div = document.createElement('div');
-            // ★修正: createBusCardHTML に余計な引数を渡さない
             div.innerHTML = components.createBusCardHTML({
                 lineName, 
                 color: routeInfo.c, 
@@ -159,7 +166,6 @@ export function renderPlatforms() {
             });
             const card = div.firstElementChild;
             
-            // JSで直接イベントを設定 (これでHTML属性の影響を受けない)
             card.onclick = () => showTripDetail(tripId, stop.id, shapeId, lineName, routeInfo.c, routeInfo.t, destName);
             
             container.appendChild(card);
@@ -167,6 +173,7 @@ export function renderPlatforms() {
     });
 
     if (!hasBus) {
+        // ここは中身が空の時だけなので innerHTML でOK
         container.innerHTML = components.createEmptyMsgHTML('該当するバスはありません');
     }
 }
@@ -209,7 +216,6 @@ function showTripDetail(tripId, currentStopId, shapeId, lineName, lineColor, lin
     
     state.activeRouteStopId = currentStopId;
 
-    // ★修正: ルート詳細では「出発地」だけを黒くしたいので highlightMarker (排他) でOK
     mapManager.highlightMarker(currentStopId);
     
     mapManager.drawRoutePolyline(shapeId);
